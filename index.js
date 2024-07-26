@@ -1,27 +1,51 @@
-const express = require("express");
+const express = require('express');
+const http = require('http');
+const cors = require('cors');
+const fs = require('fs');
+const socketIo = require('socket.io');
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
-app.use(cors())
+const PORT = 3000;
 
+app.use(cors());
 
+let vehicleData = [];
+fs.readFile('data.json', 'utf8', (err, data) => {
+    if (err) {
+        console.error('Error reading data', err);
+    } else {
+        vehicleData = JSON.parse(data);
+    }
+});
 
-app.get('/hello',(req,res)=>{
-res.json({"message":"Get Method"})
-})
+let index = 0;
+const sendLocation = () => {
+    if (index < vehicleData.length) {
+        io.emit('vehicleLocation', vehicleData[index]);
+        io.emit('alka', {"course":"IT","clg":"BIT-D"});
+        index++;
+    } else {
+        index = 0; 
+    }
+};
 
-app.post('/', (req,res)=>{
-    res.json({"message":"Get Method"})
+io.on('connection', (socket) => {
+    console.log('New client connected');
+    socket.on('disconnect', () => {
+        console.log('Client disconnected');
+    });
+});
 
-})
+setInterval(sendLocation, 5000); 
 
-app.delete('/',(req,res)=>{
-    res.send("hello prithvi")
-})
-
-app.patch('/', (req,res)=>{
-    res.send("hello alka")
-})
-app.listen(5000,function(){
-    console.log("Server started")
-})
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
