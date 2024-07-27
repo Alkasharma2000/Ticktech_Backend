@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
-const fs = require('fs');
 const socketIo = require('socket.io');
 
 const app = express();
@@ -13,28 +12,43 @@ const io = socketIo(server, {
     }
 });
 
+
+
 const PORT = 3000;
 
 app.use(cors());
 
-let vehicleData = [];
-fs.readFile('data.json', 'utf8', (err, data) => {
-    if (err) {
-        console.error('Error reading data', err);
-    } else {
-        vehicleData = JSON.parse(data);
-    }
-});
+app.get("/",(req,res)=>{
+ res.json({"msg":"Welcome to Alka World"})
+})
 
-let index = 0;
+// // Initial location and direction
+// let latitude = 17.385044;
+// let longitude = 78.486671;
+
+// Initial location and direction
+let latitude = 21.245990;
+let longitude = 81.389395;
+
+const latitudeIncrement = 0.00001; 
+const longitudeIncrement = 0.00001; 
+const generateRandomLocation = () => {
+    
+    latitude += latitudeIncrement;
+    longitude += longitudeIncrement;
+    
+    
+    return {
+        latitude: latitude.toFixed(6),
+        longitude: longitude.toFixed(6),
+        timestamp: new Date().toISOString()
+    };
+};
+
 const sendLocation = () => {
-    if (index < vehicleData.length) {
-        io.emit('vehicleLocation', vehicleData[index]);
-        io.emit('alka', {"course":"IT","clg":"BIT-D"});
-        index++;
-    } else {
-        index = 0; 
-    }
+    const location = generateRandomLocation();
+    io.emit('vehicleLocation', location);
+    io.emit('alka', {"course":"IT","clg":"BIT-D"});
 };
 
 io.on('connection', (socket) => {
@@ -44,8 +58,9 @@ io.on('connection', (socket) => {
     });
 });
 
-setInterval(sendLocation, 5000); 
+setInterval(sendLocation, 10); 
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
